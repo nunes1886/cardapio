@@ -5,16 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel do Chef - Gerenciar Cardápio</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 </head>
-<body class="bg-light">
+<body class="bg-light pb-5">
 
-    <div class="container mt-5" style="max-width: 600px;">
-        <div class="card shadow">
+    <div class="container mt-5" style="max-width: 800px;">
+        
+        <div class="card shadow mb-4 border-primary">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-gear-fill"></i> Configurações Gerais</h5>
+            </div>
+            <div class="card-body">
+                <label class="form-label fw-bold">Nome do Restaurante</label>
+                <div class="input-group">
+                    <input type="text" id="nome-restaurante" class="form-control" placeholder="Ex: Pizzaria Nostra">
+                    <button class="btn btn-outline-primary fw-bold" id="btn-salvar-nome">
+                        <i class="bi bi-save"></i> Salvar Nome
+                    </button>
+                </div>
+                <small class="text-muted">Este nome aparecerá no topo do aplicativo do cliente.</small>
+            </div>
+        </div>
+
+        <div class="card shadow mb-5">
             <div class="card-header bg-danger text-white">
-                <h4 class="mb-0">👨‍🍳 Cadastrar Novo Prato</h4>
+                <h5 class="mb-0" id="titulo-form">👨‍🍳 Cadastrar Novo Prato</h5>
             </div>
             <div class="card-body">
                 <form id="form-prato">
+                    <input type="hidden" id="id-prato-edicao" value="">
+
                     <div class="mb-3">
                         <label class="form-label fw-bold">Nome do Prato/Item</label>
                         <input type="text" id="nome" class="form-control" required placeholder="Ex: Lasanha Bolonhesa">
@@ -44,7 +64,7 @@
                         <div class="col-6 d-flex align-items-end">
                             <div class="form-check form-switch fs-5">
                                 <input class="form-check-input" type="checkbox" id="disponivel" checked>
-                                <label class="form-check-label fs-6 mt-1" for="disponivel">Disponível para venda</label>
+                                <label class="form-check-label fs-6 mt-1" for="disponivel">Disponível</label>
                             </div>
                         </div>
                     </div>
@@ -54,17 +74,41 @@
                         <input type="url" id="imagem_url" class="form-control" placeholder="Cole o link da foto aqui">
                     </div>
 
-                    <button type="submit" class="btn btn-success w-100 fw-bold fs-5">Salvar no Cardápio</button>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success w-100 fw-bold fs-5" id="btn-submit">Adicionar ao Cardápio</button>
+                        <button type="button" class="btn btn-secondary d-none fw-bold" id="btn-cancelar" onclick="cancelarEdicao()">Cancelar</button>
+                    </div>
                 </form>
             </div>
         </div>
+
+        <h4 class="fw-bold mb-3">📋 Pratos Cadastrados</h4>
+        <div class="card shadow">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Item</th>
+                            <th>Categoria</th>
+                            <th>Preço</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lista-pratos">
+                        <tr><td colspan="5" class="text-center text-muted">Carregando cardápio...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+        // Importamos novas funções: doc, setDoc, getDoc, updateDoc, deleteDoc e onSnapshot
+        import { getFirestore, collection, addDoc, onSnapshot, doc, setDoc, getDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
-        // COLOQUE SUAS CHAVES DO FIREBASE AQUI!
         const firebaseConfig = {
             apiKey: "AIzaSyChutWVtye9dU_J1WH_9F8DooaDfadJZ3o",
             authDomain: "cardapio-digital-app-4ca1f.firebaseapp.com",
@@ -77,12 +121,86 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Ação do Botão "Salvar"
-        document.getElementById("form-prato").addEventListener("submit", async function(event) {
-            event.preventDefault(); // Impede a página de recarregar
+        // ==========================================
+        // 1. CONFIGURAÇÕES DO RESTAURANTE (NOME)
+        // ==========================================
+        const refConfig = doc(db, "configuracoes", "info_restaurante");
+
+        // Carrega o nome atual do banco quando a página abre
+        getDoc(refConfig).then((snapshot) => {
+            if (snapshot.exists() && snapshot.data().nome) {
+                document.getElementById('nome-restaurante').value = snapshot.data().nome;
+            }
+        });
+
+        // Botão para salvar o novo nome
+        document.getElementById('btn-salvar-nome').addEventListener('click', async () => {
+            const novoNome = document.getElementById('nome-restaurante').value.trim();
+            if (novoNome === "") return alert("Digite um nome válido!");
             
-            // Pega os valores que o Chef digitou
-            const novoPrato = {
+            try {
+                // setDoc cria ou atualiza o documento fixo "info_restaurante"
+                await setDoc(refConfig, { nome: novoNome }, { merge: true });
+                alert("Nome do restaurante salvo com sucesso!");
+            } catch (error) {
+                alert("Erro ao salvar o nome.");
+            }
+        });
+
+        // ==========================================
+        // 2. LISTAGEM DO CARDÁPIO (TEMPO REAL)
+        // ==========================================
+        const corpoTabela = document.getElementById('lista-pratos');
+        
+        onSnapshot(collection(db, "cardapio"), (snapshot) => {
+            let html = "";
+            if (snapshot.empty) {
+                corpoTabela.innerHTML = "<tr><td colspan='5' class='text-center text-muted'>Nenhum prato cadastrado ainda.</td></tr>";
+                return;
+            }
+
+            snapshot.forEach((docSnap) => {
+                const prato = docSnap.data();
+                const id = docSnap.id;
+                
+                // Converte os dados do prato para JSON para podermos passar para a função de editar
+                const pratoJSON = encodeURIComponent(JSON.stringify(prato));
+
+                html += `
+                <tr>
+                    <td>
+                        <div class="fw-bold">${prato.nome}</div>
+                        <small class="text-muted text-truncate d-inline-block" style="max-width: 150px;">${prato.descricao}</small>
+                    </td>
+                    <td><span class="badge bg-secondary">${prato.categoria}</span></td>
+                    <td class="fw-bold text-success">R$ ${prato.preco.toFixed(2).replace('.', ',')}</td>
+                    <td class="text-center">
+                        ${prato.disponivel 
+                            ? '<span class="badge bg-success">Ativo</span>' 
+                            : '<span class="badge bg-danger">Inativo</span>'}
+                    </td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-outline-primary" onclick="prepararEdicao('${id}', '${pratoJSON}')" title="Editar">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="excluirPrato('${id}')" title="Excluir">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                `;
+            });
+            corpoTabela.innerHTML = html;
+        });
+
+        // ==========================================
+        // 3. SALVAR (CRIAR NOVO OU ATUALIZAR)
+        // ==========================================
+        document.getElementById("form-prato").addEventListener("submit", async function(event) {
+            event.preventDefault(); 
+            
+            const idEdicao = document.getElementById('id-prato-edicao').value;
+            const prato = {
                 nome: document.getElementById('nome').value,
                 categoria: document.getElementById('categoria').value,
                 descricao: document.getElementById('descricao').value,
@@ -92,14 +210,65 @@
             };
 
             try {
-                await addDoc(collection(db, "cardapio"), novoPrato);
-                alert("Prato salvo com sucesso no cardápio!");
-                document.getElementById("form-prato").reset(); // Limpa o formulário
+                if (idEdicao) {
+                    // Modo de Edição (Atualiza o documento existente)
+                    await updateDoc(doc(db, "cardapio", idEdicao), prato);
+                    alert("Prato atualizado com sucesso!");
+                    window.cancelarEdicao(); // Limpa o form e volta ao normal
+                } else {
+                    // Modo Novo (Cria um novo documento)
+                    await addDoc(collection(db, "cardapio"), prato);
+                    alert("Novo prato salvo no cardápio!");
+                    document.getElementById("form-prato").reset();
+                }
             } catch (error) {
                 console.error("Erro ao salvar: ", error);
-                alert("Erro ao salvar prato. Tente novamente.");
+                alert("Erro ao salvar prato.");
             }
         });
+
+        // ==========================================
+        // 4. FUNÇÕES GLOBAIS DE APOIO (EDITAR E EXCLUIR)
+        // ==========================================
+        
+        // Excluir
+        window.excluirPrato = async function(id) {
+            if(confirm("Tem certeza que deseja excluir este prato definitivamente?")) {
+                await deleteDoc(doc(db, "cardapio", id));
+            }
+        }
+
+        // Puxar dados para o form (Editar)
+        window.prepararEdicao = function(id, pratoJSONCodificado) {
+            const prato = JSON.parse(decodeURIComponent(pratoJSONCodificado));
+            
+            document.getElementById('id-prato-edicao').value = id;
+            document.getElementById('nome').value = prato.nome;
+            document.getElementById('categoria').value = prato.categoria;
+            document.getElementById('descricao').value = prato.descricao;
+            document.getElementById('preco').value = prato.preco;
+            document.getElementById('disponivel').checked = prato.disponivel;
+            document.getElementById('imagem_url').value = prato.imagem_url || "";
+
+            // Muda o visual do form para o "Modo Edição"
+            document.getElementById('titulo-form').innerHTML = '✏️ Editar Prato';
+            document.getElementById('btn-submit').innerText = 'Atualizar Prato';
+            document.getElementById('btn-submit').classList.replace('btn-success', 'btn-warning');
+            document.getElementById('btn-cancelar').classList.remove('d-none');
+            
+            window.scrollTo(0, 0); // Rola a página para o topo
+        }
+
+        // Cancelar a edição e voltar a ser "Adicionar Novo"
+        window.cancelarEdicao = function() {
+            document.getElementById("form-prato").reset();
+            document.getElementById('id-prato-edicao').value = "";
+            document.getElementById('titulo-form').innerHTML = '👨‍🍳 Cadastrar Novo Prato';
+            document.getElementById('btn-submit').innerText = 'Adicionar ao Cardápio';
+            document.getElementById('btn-submit').classList.replace('btn-warning', 'btn-success');
+            document.getElementById('btn-cancelar').classList.add('d-none');
+        }
+
     </script>
 </body>
 </html>
