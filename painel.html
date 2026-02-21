@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Pedidos - Caixa/Cozinha</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #f4f6f9; }
+        .card-pedido { transition: transform 0.2s; border-left: 5px solid transparent; }
+        .card-pedido:hover { transform: translateY(-3px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
+        /* Cores para identificar rápido */
+        .borda-mesa { border-left-color: #0d6efd; } /* Azul para Mesa */
+        .borda-delivery { border-left-color: #fd7e14; } /* Laranja para Delivery */
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-dark bg-dark sticky-top shadow-sm">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="#">
+                <i class="bi bi-display"></i> Painel de Controle - Pedidos
+            </a>
+            <span class="text-white d-flex align-items-center">
+                <span class="spinner-grow spinner-grow-sm text-success me-2" role="status" aria-hidden="true"></span>
+                Ao vivo
+            </span>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4 px-4">
+        <div class="row" id="area-pedidos">
+            <div class="col-12 text-center text-muted mt-5">
+                <div class="spinner-border text-secondary mb-2" role="status"></div>
+                <p>Aguardando conexão com o banco de dados...</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+        // Importamos o onSnapshot para ouvir em tempo real e o orderBy para ordenar pela data
+        import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
+        // Suas chaves do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyChutWVtye9dU_J1WH_9F8DooaDfadJZ3o",
+            authDomain: "cardapio-digital-app-4ca1f.firebaseapp.com",
+            projectId: "cardapio-digital-app-4ca1f",
+            storageBucket: "cardapio-digital-app-4ca1f.firebasestorage.app",
+            messagingSenderId: "468777273736",
+            appId: "1:468777273736:web:fa7b4b0d8cfdf23f68923d"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Cria a consulta ordenando pelos pedidos mais recentes (descendente)
+        const consultaPedidos = query(collection(db, "pedidos"), orderBy("data_hora", "desc"));
+
+        const containerPedidos = document.getElementById('area-pedidos');
+
+        // O 'onSnapshot' é o coração do sistema: ele escuta mudanças 24h por dia
+        onSnapshot(consultaPedidos, (snapshot) => {
+            let html = "";
+            
+            if (snapshot.empty) {
+                containerPedidos.innerHTML = "<div class='col-12 text-center text-muted mt-5'><h5>Nenhum pedido na fila.</h5></div>";
+                return;
+            }
+
+            snapshot.forEach((doc) => {
+                const pedido = doc.data();
+                const idPedido = doc.id; // O ID único que o Firebase gerou
+
+                // Verifica se é Mesa ou Delivery para mudar a cor e os dados que aparecem
+                const isDelivery = pedido.tipo_pedido === 'delivery';
+                const corBorda = isDelivery ? 'borda-delivery' : 'borda-mesa';
+                const iconeTipo = isDelivery ? '<i class="bi bi-motorcycle text-warning"></i> Delivery' : '<i class="bi bi-shop text-primary"></i> Mesa ' + pedido.mesa;
+                
+                // Monta a lista de itens que o cliente pediu
+                let listaItens = "";
+                if(pedido.itens && pedido.itens.length > 0){
+                    pedido.itens.forEach(item => {
+                        listaItens += `<li><b>1x</b> ${item.nome} ${item.observacao ? `<br><small class="text-danger">Obs: ${item.observacao}</small>` : ''}</li>`;
+                    });
+                }
+
+                // Dados Extras de Delivery (Endereço, Troco)
+                let infoDeliveryHTML = "";
+                if (isDelivery && pedido.dados_entrega) {
+                    infoDeliveryHTML = `
+                        <div class="alert alert-warning p-2 mt-2 mb-0" style="font-size: 0.85rem;">
+                            <strong>Endereço:</strong> ${pedido.dados_entrega.endereco}<br>
+                            <strong>WhatsApp:</strong> ${pedido.dados_entrega.telefone}<br>
+                            ${pedido.dados_entrega.troco_para ? `<strong>Troco para:</strong> R$ ${pedido.dados_entrega.troco_para}` : ''}
+                        </div>
+                    `;
+                }
+
+                // Cria o Card (Cardzinho visual) para o pedido
+                html += `
+                <div class="col-12 col-md-6 col-lg-4 mb-4">
+                    <div class="card shadow-sm h-100 card-pedido ${corBorda}">
+                        
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                            <span class="fw-bold fs-5">${iconeTipo}</span>
+                            <span class="badge bg-secondary">${pedido.data_hora.split(', ')[1]}</span>
+                        </div>
+                        
+                        <div class="card-body">
+                            <h6 class="card-title fw-bold">Cliente: ${pedido.cliente_nome}</h6>
+                            
+                            <hr class="my-2">
+                            <ul class="list-unstyled mb-2">
+                                ${listaItens}
+                            </ul>
+                            
+                            ${infoDeliveryHTML}
+                        </div>
+                        
+                        <div class="card-footer bg-light d-flex justify-content-between align-items-center">
+                            <div>
+                                <small class="text-muted d-block">Pagamento: <b>${pedido.financeiro?.metodo_pagamento || pedido.metodo_pagamento}</b></small>
+                                <span class="fw-bold text-success fs-5">R$ ${(pedido.financeiro?.total_final || pedido.total || 0).toFixed(2).replace('.', ',')}</span>
+                            </div>
+                            <button class="btn btn-sm btn-success fw-bold">
+                                <i class="bi bi-check2-circle"></i> Concluir
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+                `;
+            });
+
+            // Atualiza a tela com todos os cards
+            containerPedidos.innerHTML = html;
+        }, (error) => {
+            console.error("Erro ao escutar pedidos: ", error);
+            containerPedidos.innerHTML = "<div class='col-12 text-center text-danger'>Erro de conexão com o painel.</div>";
+        });
+    </script>
+</body>
+</html>
