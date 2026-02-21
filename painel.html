@@ -10,12 +10,21 @@
         body { background-color: #f4f6f9; }
         .card-pedido { transition: transform 0.2s; border-left: 5px solid transparent; }
         .card-pedido:hover { transform: translateY(-3px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
-        /* Cores para identificar rápido */
-        .borda-mesa { border-left-color: #0d6efd; } /* Azul para Mesa */
-        .borda-delivery { border-left-color: #fd7e14; } /* Laranja para Delivery */
+        .borda-mesa { border-left-color: #0d6efd; }
+        .borda-delivery { border-left-color: #fd7e14; }
+        
+        /* NOVA ANIMAÇÃO: Faz o card piscar em verde quando é novo */
+        @keyframes piscarNovo {
+            0% { box-shadow: 0 0 15px rgba(40, 167, 69, 0.8); background-color: #d4edda; }
+            50% { box-shadow: 0 0 5px rgba(40, 167, 69, 0.2); background-color: #fff; }
+            100% { box-shadow: 0 0 15px rgba(40, 167, 69, 0.8); background-color: #d4edda; }
+        }
+        .animacao-novo { animation: piscarNovo 2s infinite; border: 2px solid #28a745 !important; }
     </style>
 </head>
 <body>
+    
+    <audio id="som-campainha" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
 
     <nav class="navbar navbar-dark bg-dark sticky-top shadow-sm">
         <div class="container-fluid">
@@ -40,8 +49,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-        // Importamos o onSnapshot para ouvir em tempo real e o orderBy para ordenar pela data
-        import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, query, orderBy, doc, updateDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
         // Suas chaves do Firebase
         const firebaseConfig = {
@@ -55,13 +63,15 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-
-        // Cria a consulta ordenando pelos pedidos mais recentes (descendente)
         const consultaPedidos = query(collection(db, "pedidos"), orderBy("data_hora", "desc"));
-
         const containerPedidos = document.getElementById('area-pedidos');
 
-        // O 'onSnapshot' é o coração do sistema: ele escuta mudanças 24h por dia
+        // VARIÁVEIS PARA CONTROLAR O SOM E A ANIMAÇÃO
+        let primeiraCarga = true; 
+        let idsConhecidos = new Set(); 
+        const somCampainha = document.getElementById('som-campainha');
+
+        // Escutando o banco de dados em tempo real
         onSnapshot(consultaPedidos, (snapshot) => {
             let html = "";
             
@@ -72,14 +82,25 @@
 
             snapshot.forEach((doc) => {
                 const pedido = doc.data();
-                const idPedido = doc.id; // O ID único que o Firebase gerou
+                const idPedido = doc.id; 
 
-                // Verifica se é Mesa ou Delivery para mudar a cor e os dados que aparecem
+                // Pula os pedidos que já foram concluídos
+                if (pedido.status === "concluido") return;
+
+                // LÓGICA DO ALARME: Verifica se é um pedido novo
+                let classeNovoPedido = "";
+                if (!primeiraCarga && !idsConhecidos.has(idPedido)) {
+                    somCampainha.play().catch(e => console.log("Áudio bloqueado pelo navegador."));
+                    classeNovoPedido = "animacao-novo"; // Adiciona a classe que faz piscar
+                }
+                idsConhecidos.add(idPedido); // Salva para não apitar duas vezes
+
+                // Define as cores e ícones (Mesa ou Delivery)
                 const isDelivery = pedido.tipo_pedido === 'delivery';
                 const corBorda = isDelivery ? 'borda-delivery' : 'borda-mesa';
                 const iconeTipo = isDelivery ? '<i class="bi bi-motorcycle text-warning"></i> Delivery' : '<i class="bi bi-shop text-primary"></i> Mesa ' + pedido.mesa;
                 
-                // Monta a lista de itens que o cliente pediu
+                // Monta os itens do pedido
                 let listaItens = "";
                 if(pedido.itens && pedido.itens.length > 0){
                     pedido.itens.forEach(item => {
@@ -87,7 +108,7 @@
                     });
                 }
 
-                // Dados Extras de Delivery (Endereço, Troco)
+                // Monta o quadro amarelo de endereço (se for delivery)
                 let infoDeliveryHTML = "";
                 if (isDelivery && pedido.dados_entrega) {
                     infoDeliveryHTML = `
@@ -99,10 +120,10 @@
                     `;
                 }
 
-                // Cria o Card (Cardzinho visual) para o pedido
+                // Cria o visual do Card. AQUI entram as variáveis de borda e animação juntas!
                 html += `
                 <div class="col-12 col-md-6 col-lg-4 mb-4">
-                    <div class="card shadow-sm h-100 card-pedido ${corBorda}">
+                    <div class="card shadow-sm h-100 card-pedido ${corBorda} ${classeNovoPedido}">
                         
                         <div class="card-header bg-white d-flex justify-content-between align-items-center">
                             <span class="fw-bold fs-5">${iconeTipo}</span>
@@ -111,12 +132,10 @@
                         
                         <div class="card-body">
                             <h6 class="card-title fw-bold">Cliente: ${pedido.cliente_nome}</h6>
-                            
                             <hr class="my-2">
                             <ul class="list-unstyled mb-2">
                                 ${listaItens}
                             </ul>
-                            
                             ${infoDeliveryHTML}
                         </div>
                         
@@ -125,7 +144,7 @@
                                 <small class="text-muted d-block">Pagamento: <b>${pedido.financeiro?.metodo_pagamento || pedido.metodo_pagamento}</b></small>
                                 <span class="fw-bold text-success fs-5">R$ ${(pedido.financeiro?.total_final || pedido.total || 0).toFixed(2).replace('.', ',')}</span>
                             </div>
-                            <button class="btn btn-sm btn-success fw-bold">
+                            <button class="btn btn-sm btn-success fw-bold" onclick="concluirPedido('${idPedido}')">
                                 <i class="bi bi-check2-circle"></i> Concluir
                             </button>
                         </div>
@@ -135,12 +154,31 @@
                 `;
             });
 
-            // Atualiza a tela com todos os cards
-            containerPedidos.innerHTML = html;
+            // Se todos os pedidos estão concluídos
+            if (html === "") {
+                containerPedidos.innerHTML = "<div class='col-12 text-center text-muted mt-5'><h5>Todos os pedidos foram concluídos! Nenhuma pendência.</h5></div>";
+            } else {
+                containerPedidos.innerHTML = html;
+            }
+            
+            // Avisa o sistema que a primeira leitura do banco já foi feita
+            primeiraCarga = false;
+            
         }, (error) => {
             console.error("Erro ao escutar pedidos: ", error);
-            containerPedidos.innerHTML = "<div class='col-12 text-center text-danger'>Erro de conexão com o painel.</div>";
         });
+
+        // Função do botão concluir
+        window.concluirPedido = async function(idPedido) {
+            if(confirm("Tem certeza que este pedido já foi entregue/finalizado?")) {
+                try {
+                    const referenciaPedido = doc(db, "pedidos", idPedido);
+                    await updateDoc(referenciaPedido, { status: "concluido" });
+                } catch (error) {
+                    alert("Erro ao atualizar o pedido. Tente novamente.");
+                }
+            }
+        }
     </script>
 </body>
 </html>

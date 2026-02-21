@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Chef - Gerenciar Cardápio</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+    <div class="container mt-5" style="max-width: 600px;">
+        <div class="card shadow">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0">👨‍🍳 Cadastrar Novo Prato</h4>
+            </div>
+            <div class="card-body">
+                <form id="form-prato">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nome do Prato/Item</label>
+                        <input type="text" id="nome" class="form-control" required placeholder="Ex: Lasanha Bolonhesa">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Categoria</label>
+                        <select id="categoria" class="form-select">
+                            <option value="Sugestão do Chef">Sugestão do Chef</option>
+                            <option value="Prato Principal">Prato Principal</option>
+                            <option value="Lanches">Lanches</option>
+                            <option value="Sobremesas">Sobremesas</option>
+                            <option value="Bebidas">Bebidas</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Descrição (Ingredientes)</label>
+                        <textarea id="descricao" class="form-control" rows="2" placeholder="Ex: Massa fresca, molho ao sugo, carne moída..."></textarea>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-bold">Preço (R$)</label>
+                            <input type="number" id="preco" class="form-control" step="0.01" required placeholder="Ex: 45.90">
+                        </div>
+                        <div class="col-6 d-flex align-items-end">
+                            <div class="form-check form-switch fs-5">
+                                <input class="form-check-input" type="checkbox" id="disponivel" checked>
+                                <label class="form-check-label fs-6 mt-1" for="disponivel">Disponível para venda</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">URL da Imagem (Link)</label>
+                        <input type="url" id="imagem_url" class="form-control" placeholder="Cole o link da foto aqui">
+                    </div>
+
+                    <button type="submit" class="btn btn-success w-100 fw-bold fs-5">Salvar no Cardápio</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
+        // COLOQUE SUAS CHAVES DO FIREBASE AQUI!
+        const firebaseConfig = {
+            apiKey: "AIzaSyChutWVtye9dU_J1WH_9F8DooaDfadJZ3o",
+            authDomain: "cardapio-digital-app-4ca1f.firebaseapp.com",
+            projectId: "cardapio-digital-app-4ca1f",
+            storageBucket: "cardapio-digital-app-4ca1f.firebasestorage.app",
+            messagingSenderId: "468777273736",
+            appId: "1:468777273736:web:fa7b4b0d8cfdf23f68923d"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Ação do Botão "Salvar"
+        document.getElementById("form-prato").addEventListener("submit", async function(event) {
+            event.preventDefault(); // Impede a página de recarregar
+            
+            // Pega os valores que o Chef digitou
+            const novoPrato = {
+                nome: document.getElementById('nome').value,
+                categoria: document.getElementById('categoria').value,
+                descricao: document.getElementById('descricao').value,
+                preco: parseFloat(document.getElementById('preco').value),
+                disponivel: document.getElementById('disponivel').checked,
+                imagem_url: document.getElementById('imagem_url').value
+            };
+
+            try {
+                await addDoc(collection(db, "cardapio"), novoPrato);
+                alert("Prato salvo com sucesso no cardápio!");
+                document.getElementById("form-prato").reset(); // Limpa o formulário
+            } catch (error) {
+                console.error("Erro ao salvar: ", error);
+                alert("Erro ao salvar prato. Tente novamente.");
+            }
+        });
+    </script>
+</body>
+</html>
