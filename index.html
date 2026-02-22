@@ -11,7 +11,9 @@
 
     <nav class="navbar navbar-dark bg-danger sticky-top shadow-sm">
         <div class="container-fluid">
-            <a class="navbar-brand fw-bold" href="#">🍔 Sabor & Cia</a>
+            <a class="navbar-brand fw-bold" href="#" id="nome-restaurante-topo">
+                <i class="bi bi-shop"></i> Carregando...
+            </a>
             
             <button class="btn btn-warning position-relative" onclick="abrirCarrinho()">
                 <i class="bi bi-cart-fill"></i> Carrinho
@@ -23,17 +25,13 @@
     </nav>
 
     <div class="container mt-4 mb-5">
-        <h4 class="mb-3 text-secondary border-bottom pb-2">Destaques do Chef</h4>
-
         <div class="row" id="lista-produtos">
-            
             <div class="col-12 text-center py-5">
                 <div class="spinner-border text-danger" role="status">
                     <span class="visually-hidden">Carregando...</span>
                 </div>
                 <p class="mt-2 text-muted fw-bold">Puxando os pratos do chef...</p>
             </div>
-
         </div>
     </div>
 
@@ -139,22 +137,17 @@
     <script>
        let carrinho = [];
 
-        // 1. Adiciona o item e mostra um feedback visual
         function adicionarItem(nome, preco) {
             carrinho.push({ nome: nome, preco: preco });
             atualizarContador();
-            renderizarCarrinho(); // Atualiza a lista visualmente
-            
-            // Opcional: Abre o carrinho automaticamente ao adicionar
+            renderizarCarrinho(); 
             abrirCarrinho(); 
         }
 
-        // 2. Atualiza a bolinha vermelha no topo
         function atualizarContador() {
             document.getElementById('contador-carrinho').innerText = carrinho.length;
         }
 
-        // Alterna os campos entre Mesa e Delivery
         window.alternarTipoPedido = function() {
             let tipo = document.getElementById('tipo-pedido').value;
             let blocoMesa = document.getElementById('bloco-mesa');
@@ -169,35 +162,26 @@
             }
         }
 
-        // Máscara automática para o WhatsApp: (XX) XXXXX-XXXX
         window.mascaraTelefone = function(event) {
             let input = event.target;
-            // Remove tudo que não for número
             let valor = input.value.replace(/\D/g, ""); 
-            
-            // Limita a 11 números no máximo (DDD + 9 dígitos)
             if (valor.length > 11) valor = valor.slice(0, 11); 
 
-            // Aplica a formatação
             if (valor.length > 2) {
                 valor = `(${valor.substring(0, 2)}) ${valor.substring(2)}`;
             }
             if (valor.length > 9) {
                 valor = `${valor.substring(0, 10)}-${valor.substring(10)}`;
             }
-            
             input.value = valor;
         }
 
-        // 3. Abre a aba lateral do Bootstrap
         function abrirCarrinho() {
             var myOffcanvas = document.getElementById('carrinhoLateral');
             var bsOffcanvas = new bootstrap.Offcanvas(myOffcanvas);
             bsOffcanvas.show();
         }
 
-        // 4. Constrói o visual dos itens dentro do carrinho e soma o total
-        // 4. Constrói o visual dos itens e soma o total
         function renderizarCarrinho() {
             let containerItens = document.getElementById('itens-do-carrinho');
             let totalElemento = document.getElementById('total-carrinho');
@@ -211,7 +195,6 @@
             let htmlItens = '';
             let valorTotal = 0;
 
-            // Cria um cardzinho para cada item no carrinho
             carrinho.forEach((item, index) => {
                 valorTotal += item.preco;
                 
@@ -240,66 +223,51 @@
             totalElemento.innerText = `R$ ${valorTotal.toFixed(2).replace('.', ',')}`;
         }
 
-        // 5. Remove um item (se o cliente desistir)
         function removerItem(index) {
             carrinho.splice(index, 1);
             atualizarContador();
             renderizarCarrinho();
         }
 
-        // 5.5 NOVA FUNÇÃO: Salva a observação digitada no item correto
         function salvarObservacao(index, texto) {
             carrinho[index].observacao = texto;
             console.log("Carrinho atualizado com observação:", carrinho);
         }
 
-        // 6. Botões de Pagamento (Mockups por enquanto)
-        // 6. Botão Pagar com Pix (Abre o Modal e gera o QR Code)
         function pagarNaMesaPix() {
             if (carrinho.length === 0) {
                 alert("Seu carrinho está vazio!");
                 return;
             }
 
-            // Soma o valor total
             let valorTotal = carrinho.reduce((total, item) => total + item.preco, 0);
-
-            // Atualiza o valor grande na tela do Modal
             document.getElementById('valor-pix-tela').innerText = `R$ ${valorTotal.toFixed(2).replace('.', ',')}`;
 
-            // Gera um QR Code de verdade usando uma API gratuita (para o protótipo)
             let payloadPix = `PIX_SIMULADO_VALOR_${valorTotal}`;
             document.getElementById('imagem-qrcode').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${payloadPix}`;
 
-            // Fecha a aba lateral do carrinho
             var offcanvasElement = document.getElementById('carrinhoLateral');
             var offcanvasInstance = bootstrap.Offcanvas.getInstance(offcanvasElement);
             if(offcanvasInstance) offcanvasInstance.hide();
 
-            // Abre a janelinha (Modal) do Pix
             var modalPix = new bootstrap.Modal(document.getElementById('modalPix'));
             modalPix.show();
         }
 
-        // 7. Função para o botão "Copiar"
         function copiarPix() {
             var inputCopia = document.getElementById("codigo-pix-copia");
             inputCopia.select();
-            inputCopia.setSelectionRange(0, 99999); // Para mobile
+            inputCopia.setSelectionRange(0, 99999); 
             navigator.clipboard.writeText(inputCopia.value);
             alert("Código Pix copiado com sucesso!");
         }
 
-        // 8. O cliente clica que já pagou
         function confirmarPagamentoPix() {
             alert("Pedido enviado para a cozinha com sucesso! Acompanhe pelo seu celular.");
-            
-            // Limpa o carrinho para o próximo pedido
             carrinho = [];
             atualizarContador();
             renderizarCarrinho();
             
-            // Fecha o modal do Pix
             var modalElement = document.getElementById('modalPix');
             var modalInstance = bootstrap.Modal.getInstance(modalElement);
             modalInstance.hide();
@@ -312,8 +280,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-        // Importamos os comandos do Firestore
-        import { getFirestore, collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+        // NOVO: Adicionado doc e getDoc na importação
+        import { getFirestore, collection, getDocs, addDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyChutWVtye9dU_J1WH_9F8DooaDfadJZ3o",
@@ -325,60 +293,102 @@
         };
 
         const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app); // Ligando o Banco de Dados
+        const db = getFirestore(app); 
 
-        // Função que busca os dados lá na nuvem
-        async function carregarCardapio() {
+        // NOVA FUNÇÃO UNIFICADA: Puxa Nome, Categorias e depois os Pratos
+        async function carregarDadosIniciais() {
             const container = document.getElementById('lista-produtos');
             
             try {
-                // Vai na coleção "cardapio" e traz tudo
-                const querySnapshot = await getDocs(collection(db, "cardapio"));
-                let html = "";
+                // 1. Puxa Configurações (Nome do Restaurante e Ordem das Categorias)
+                const refConfig = doc(db, "configuracoes", "info_restaurante");
+                const configSnap = await getDoc(refConfig);
+                let ordemCategorias = ["Sugestão do Chef", "Prato Principal", "Lanches", "Sobremesas", "Bebidas"];
                 
-                // Se não tiver nada cadastrado lá
+                if (configSnap.exists()) {
+                    const dadosConfig = configSnap.data();
+                    if (dadosConfig.nome) {
+                        document.getElementById('nome-restaurante-topo').innerHTML = `<i class="bi bi-shop"></i> ${dadosConfig.nome}`;
+                    }
+                    if (dadosConfig.categorias && dadosConfig.categorias.length > 0) {
+                        ordemCategorias = dadosConfig.categorias; // Pega a ordem customizada do Admin
+                    }
+                } else {
+                    document.getElementById('nome-restaurante-topo').innerHTML = `<i class="bi bi-shop"></i> Cardápio Digital`;
+                }
+
+                // 2. Puxa os Pratos
+                const querySnapshot = await getDocs(collection(db, "cardapio"));
+                
                 if (querySnapshot.empty) {
                     container.innerHTML = "<div class='col-12 text-center text-muted py-4'>Nenhum prato cadastrado ainda.</div>";
                     return;
                 }
 
-                // Para cada prato que ele achar no banco...
-                querySnapshot.forEach((doc) => {
-                    const prato = doc.data();
+                // 3. Agrupa os pratos achados pelas categorias deles
+                let itensAgrupados = {};
+                querySnapshot.forEach((docSnap) => {
+                    const prato = docSnap.data();
+                    if (prato.disponivel === false) return; // Se tiver inativo, pula
                     
-                    // Só mostra se estiver disponível
-                    if (prato.disponivel === false) return;
+                    const cat = prato.categoria || "Outros";
+                    if (!itensAgrupados[cat]) itensAgrupados[cat] = [];
+                    itensAgrupados[cat].push(prato);
+                });
 
-                    // Monta o Card do HTML com os dados do Firebase
-                    html += `
-                    <div class="col-12 col-md-6 mb-3">
-                        <div class="card shadow-sm h-100 border-0">
-                            <div class="row g-0 h-100">
-                                <div class="col-4">
-                                    <img src="${prato.imagem_url || 'https://via.placeholder.com/150'}" class="img-fluid rounded-start h-100" style="object-fit: cover; min-height: 120px;" alt="${prato.nome}">
-                                </div>
-                                <div class="col-8">
-                                    <div class="card-body d-flex flex-column justify-content-between h-100 py-2">
-                                        <div>
-                                            <h6 class="card-title fw-bold mb-1">${prato.nome}</h6>
-                                            <p class="card-text text-muted" style="font-size: 0.85rem;">${prato.descricao}</p>
+                // Adiciona a categoria 'Outros' no fim da lista se existir algum prato sem categoria oficial
+                if (!ordemCategorias.includes("Outros")) ordemCategorias.push("Outros");
+
+                let htmlFinal = "";
+
+                // 4. Monta o HTML seguindo a ordem de categorias
+                ordemCategorias.forEach(categoria => {
+                    if (itensAgrupados[categoria] && itensAgrupados[categoria].length > 0) {
+                        
+                        // Desenha o Título da Categoria
+                        htmlFinal += `
+                            <div class="col-12 mt-4 mb-3">
+                                <h4 class="fw-bold border-bottom pb-2 text-danger">${categoria}</h4>
+                            </div>
+                        `;
+
+                        // Desenha os pratos daquela categoria
+                        itensAgrupados[categoria].forEach((prato) => {
+                            htmlFinal += `
+                            <div class="col-12 col-md-6 mb-3">
+                                <div class="card shadow-sm h-100 border-0">
+                                    <div class="row g-0 h-100">
+                                        <div class="col-4">
+                                            <img src="${prato.imagem_url || 'https://via.placeholder.com/150'}" class="img-fluid rounded-start h-100" style="object-fit: cover; min-height: 120px;" alt="${prato.nome}">
                                         </div>
-                                        <div class="d-flex justify-content-between align-items-center mt-2">
-                                            <span class="fw-bold text-success">R$ ${prato.preco.toFixed(2).replace('.', ',')}</span>
-                                            <button class="btn btn-sm btn-outline-danger fw-bold" onclick="adicionarItem('${prato.nome}', ${prato.preco})">
-                                                + Add
-                                            </button>
+                                        <div class="col-8">
+                                            <div class="card-body d-flex flex-column justify-content-between h-100 py-2">
+                                                <div>
+                                                    <h6 class="card-title fw-bold mb-1">${prato.nome}</h6>
+                                                    <p class="card-text text-muted" style="font-size: 0.85rem;">${prato.descricao}</p>
+                                                </div>
+                                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                                    <span class="fw-bold text-success">R$ ${prato.preco.toFixed(2).replace('.', ',')}</span>
+                                                    <button class="btn btn-sm btn-outline-danger fw-bold" onclick="adicionarItem('${prato.nome}', ${prato.preco})">
+                                                        + Add
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                    `;
+                            `;
+                        });
+                    }
                 });
-                
-                // Joga o HTML pronto na tela
-                container.innerHTML = html;
+
+                // Joga tudo na tela
+                if(htmlFinal === "") {
+                    container.innerHTML = "<div class='col-12 text-center text-muted py-4'>Nenhum prato disponível no momento.</div>";
+                } else {
+                    container.innerHTML = htmlFinal;
+                }
 
             } catch (error) {
                 console.error("Erro ao carregar cardápio:", error);
@@ -386,11 +396,10 @@
             }
         }
 
-        // Chama a função assim que o site abre
-        carregarCardapio();
+        // Roda a função assim que o site carrega
+        carregarDadosIniciais();
 
-        // Como estamos dentro de um módulo, precisamos "pendurar" a função no window 
-        // para os botões do HTML conseguirem enxergá-la.
+        // Função de envio do pedido
         window.enviarPedido = async function(metodoPagamento) {
             if (carrinho.length === 0) {
                 alert("Seu carrinho está vazio!");
@@ -400,12 +409,10 @@
             let tipoPedido = document.getElementById('tipo-pedido').value;
             let inputNome = document.getElementById('nome-cliente').value.trim();
             
-            // Variáveis que vamos preencher dependendo da escolha
             let inputMesa = "";
             let dadosDelivery = null;
             let taxaEntrega = 0;
 
-            // Validações
             if (inputNome === "") {
                 alert("Por favor, preencha o seu Nome!");
                 return;
@@ -427,7 +434,7 @@
                     return;
                 }
                 
-                taxaEntrega = 8.00; // Exemplo de taxa fixa. Poderia vir do Firebase.
+                taxaEntrega = 8.00; 
                 dadosDelivery = {
                     telefone: telefone,
                     endereco: endereco,
@@ -438,13 +445,12 @@
             let valorSubtotal = carrinho.reduce((total, item) => total + item.preco, 0);
             let valorTotalFinal = valorSubtotal + taxaEntrega;
 
-            // Monta o pacote final para o Firebase
             const novoPedido = {
                 data_hora: new Date().toLocaleString('pt-BR'),
                 cliente_nome: inputNome,
                 tipo_pedido: tipoPedido,
-                mesa: inputMesa, // Se for delivery, vai vazio
-                dados_entrega: dadosDelivery, // Se for mesa, vai como 'null'
+                mesa: inputMesa, 
+                dados_entrega: dadosDelivery, 
                 itens: carrinho,
                 financeiro: {
                     subtotal: valorSubtotal,
@@ -460,7 +466,6 @@
                 console.log("Pedido salvo com ID: ", docRef.id);
                 alert(`Pedido de ${tipoPedido.toUpperCase()} enviado com sucesso!`);
                 
-                // Limpa a tela
                 carrinho = [];
                 document.getElementById('nome-cliente').value = "";
                 document.getElementById('numero-mesa').value = "";

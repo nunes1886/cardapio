@@ -24,6 +24,16 @@
                     </button>
                 </div>
                 <small class="text-muted">Este nome aparecerá no topo do aplicativo do cliente.</small>
+
+                <hr class="my-3">
+                <label class="form-label fw-bold">Adicionar Nova Categoria</label>
+                <div class="input-group">
+                    <input type="text" id="nova-categoria" class="form-control" placeholder="Ex: Pizzas, Porções, Vegano...">
+                    <button class="btn btn-outline-success fw-bold" id="btn-salvar-categoria">
+                        <i class="bi bi-plus-circle"></i> Adicionar Categoria
+                    </button>
+                </div>
+                <small class="text-muted">As categorias criadas aparecerão nas opções do cardápio.</small>
             </div>
         </div>
 
@@ -43,11 +53,7 @@
                     <div class="mb-3">
                         <label class="form-label fw-bold">Categoria</label>
                         <select id="categoria" class="form-select">
-                            <option value="Sugestão do Chef">Sugestão do Chef</option>
-                            <option value="Prato Principal">Prato Principal</option>
-                            <option value="Lanches">Lanches</option>
-                            <option value="Sobremesas">Sobremesas</option>
-                            <option value="Bebidas">Bebidas</option>
+                            <option value="">Carregando categorias...</option>
                         </select>
                     </div>
 
@@ -106,8 +112,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-        // Importamos novas funções: doc, setDoc, getDoc, updateDoc, deleteDoc e onSnapshot
-        import { getFirestore, collection, addDoc, onSnapshot, doc, setDoc, getDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+        // NOVO: Adicionado arrayUnion na importação
+        import { getFirestore, collection, addDoc, onSnapshot, doc, setDoc, getDoc, updateDoc, deleteDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyChutWVtye9dU_J1WH_9F8DooaDfadJZ3o",
@@ -122,28 +128,58 @@
         const db = getFirestore(app);
 
         // ==========================================
-        // 1. CONFIGURAÇÕES DO RESTAURANTE (NOME)
+        // 1. CONFIGURAÇÕES DO RESTAURANTE (NOME E CATEGORIAS)
         // ==========================================
         const refConfig = doc(db, "configuracoes", "info_restaurante");
 
-        // Carrega o nome atual do banco quando a página abre
-        getDoc(refConfig).then((snapshot) => {
-            if (snapshot.exists() && snapshot.data().nome) {
-                document.getElementById('nome-restaurante').value = snapshot.data().nome;
+        // Escuta as configurações em tempo real
+        onSnapshot(refConfig, (snapshot) => {
+            if (snapshot.exists()) {
+                const dados = snapshot.data();
+                
+                if (dados.nome) {
+                    document.getElementById('nome-restaurante').value = dados.nome;
+                }
+                
+                // Preenche as opções de Categoria no formulário de pratos
+                if (dados.categorias && dados.categorias.length > 0) {
+                    const selectCategoria = document.getElementById('categoria');
+                    selectCategoria.innerHTML = ""; // Limpa as opções de "carregando..."
+                    
+                    dados.categorias.forEach(cat => {
+                        selectCategoria.innerHTML += `<option value="${cat}">${cat}</option>`;
+                    });
+                }
+            } else {
+                // Se não existir o documento de configurações ainda, cria um com valores padrão
+                setDoc(refConfig, { 
+                    nome: "Meu Restaurante", 
+                    categorias: ["Sugestão do Chef", "Prato Principal", "Lanches", "Sobremesas", "Bebidas"] 
+                });
             }
         });
 
-        // Botão para salvar o novo nome
         document.getElementById('btn-salvar-nome').addEventListener('click', async () => {
             const novoNome = document.getElementById('nome-restaurante').value.trim();
             if (novoNome === "") return alert("Digite um nome válido!");
-            
             try {
-                // setDoc cria ou atualiza o documento fixo "info_restaurante"
                 await setDoc(refConfig, { nome: novoNome }, { merge: true });
-                alert("Nome do restaurante salvo com sucesso!");
+                alert("Nome salvo com sucesso!");
             } catch (error) {
                 alert("Erro ao salvar o nome.");
+            }
+        });
+
+        // Lógica para Salvar Nova Categoria
+        document.getElementById('btn-salvar-categoria').addEventListener('click', async () => {
+            const novaCat = document.getElementById('nova-categoria').value.trim();
+            if (novaCat === "") return alert("Digite o nome da categoria!");
+            try {
+                await updateDoc(refConfig, { categorias: arrayUnion(novaCat) });
+                document.getElementById('nova-categoria').value = ""; // Limpa o campo
+                alert("Categoria adicionada com sucesso!");
+            } catch (error) {
+                alert("Erro ao adicionar categoria.");
             }
         });
 
@@ -162,8 +198,6 @@
             snapshot.forEach((docSnap) => {
                 const prato = docSnap.data();
                 const id = docSnap.id;
-                
-                // Converte os dados do prato para JSON para podermos passar para a função de editar
                 const pratoJSON = encodeURIComponent(JSON.stringify(prato));
 
                 html += `
@@ -202,7 +236,7 @@
             const idEdicao = document.getElementById('id-prato-edicao').value;
             const prato = {
                 nome: document.getElementById('nome').value,
-                categoria: document.getElementById('categoria').value,
+                categoria: document.getElementById('categoria').value, // Vai pegar a categoria que o JS preencheu
                 descricao: document.getElementById('descricao').value,
                 preco: parseFloat(document.getElementById('preco').value),
                 disponivel: document.getElementById('disponivel').checked,
@@ -211,12 +245,10 @@
 
             try {
                 if (idEdicao) {
-                    // Modo de Edição (Atualiza o documento existente)
                     await updateDoc(doc(db, "cardapio", idEdicao), prato);
                     alert("Prato atualizado com sucesso!");
-                    window.cancelarEdicao(); // Limpa o form e volta ao normal
+                    window.cancelarEdicao(); 
                 } else {
-                    // Modo Novo (Cria um novo documento)
                     await addDoc(collection(db, "cardapio"), prato);
                     alert("Novo prato salvo no cardápio!");
                     document.getElementById("form-prato").reset();
@@ -230,15 +262,12 @@
         // ==========================================
         // 4. FUNÇÕES GLOBAIS DE APOIO (EDITAR E EXCLUIR)
         // ==========================================
-        
-        // Excluir
         window.excluirPrato = async function(id) {
             if(confirm("Tem certeza que deseja excluir este prato definitivamente?")) {
                 await deleteDoc(doc(db, "cardapio", id));
             }
         }
 
-        // Puxar dados para o form (Editar)
         window.prepararEdicao = function(id, pratoJSONCodificado) {
             const prato = JSON.parse(decodeURIComponent(pratoJSONCodificado));
             
@@ -250,16 +279,14 @@
             document.getElementById('disponivel').checked = prato.disponivel;
             document.getElementById('imagem_url').value = prato.imagem_url || "";
 
-            // Muda o visual do form para o "Modo Edição"
             document.getElementById('titulo-form').innerHTML = '✏️ Editar Prato';
             document.getElementById('btn-submit').innerText = 'Atualizar Prato';
             document.getElementById('btn-submit').classList.replace('btn-success', 'btn-warning');
             document.getElementById('btn-cancelar').classList.remove('d-none');
             
-            window.scrollTo(0, 0); // Rola a página para o topo
+            window.scrollTo(0, 0); 
         }
 
-        // Cancelar a edição e voltar a ser "Adicionar Novo"
         window.cancelarEdicao = function() {
             document.getElementById("form-prato").reset();
             document.getElementById('id-prato-edicao').value = "";
