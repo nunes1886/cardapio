@@ -96,51 +96,17 @@
 
         let primeiraCarga = true; 
         let idsConhecidos = new Set();
-        let escutaPedidos = null; // Guarda a conexão com o banco para podermos desligar
-
-        // Fica de olho no status de login
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                // Usuário logou! Mostra o painel e SÓ AGORA liga o radar de pedidos
-                telaLogin.classList.add('d-none');
-                painelCozinha.classList.remove('d-none');
-                ligarRadarDePedidos(); 
-            } else {
-                // Usuário deslogou! Esconde o painel e desliga o radar de pedidos
-                telaLogin.classList.remove('d-none');
-                painelCozinha.classList.add('d-none');
-                if (escutaPedidos) escutaPedidos(); 
-            }
-        });
-
-        document.getElementById('btn-entrar').addEventListener('click', async () => {
-            const email = document.getElementById('email-login').value;
-            const senha = document.getElementById('senha-login').value;
-            const btn = document.getElementById('btn-entrar');
-            
-            if(!email || !senha) return alert("Preencha e-mail e senha!");
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Entrando...';
-            
-            try {
-                await signInWithEmailAndPassword(auth, email, senha);
-            } catch (error) {
-                alert("Erro ao fazer login. Verifique e-mail e senha.");
-                btn.innerHTML = 'Acessar Painel';
-            }
-        });
-
-        document.getElementById('btn-sair').addEventListener('click', () => {
-            signOut(auth);
-        });
+        let escutaPedidos = null; 
 
         // ==========================================
-        // FUNÇÃO QUE PUXA OS PEDIDOS (SÓ RODA SE LOGADO)
+        // 1. FUNÇÃO DE BUSCAR PEDIDOS (Declarada antes)
         // ==========================================
         function ligarRadarDePedidos() {
+            // Se essa função rodar, o texto muda instantaneamente na tela!
             containerPedidos.innerHTML = `
                 <div class="col-12 text-center text-muted mt-5">
-                    <div class="spinner-border text-secondary mb-2" role="status"></div>
-                    <p>Sincronizando pedidos...</p>
+                    <div class="spinner-border text-primary mb-2" role="status"></div>
+                    <p>Sincronizando pedidos com o servidor...</p>
                 </div>
             `;
 
@@ -228,9 +194,44 @@
                 
             }, (error) => {
                 console.error("Erro ou acesso negado aos pedidos.", error);
-                containerPedidos.innerHTML = "<div class='col-12 text-center text-danger mt-5'><h5>Erro de permissão. Tente fazer login novamente.</h5></div>";
+                containerPedidos.innerHTML = "<div class='col-12 text-center text-danger mt-5'><h5>Erro de permissão. Seu login expirou.</h5></div>";
             });
         }
+
+        // ==========================================
+        // 2. CONTROLE DE AUTENTICAÇÃO E CLIQUES
+        // ==========================================
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                telaLogin.classList.add('d-none');
+                painelCozinha.classList.remove('d-none');
+                ligarRadarDePedidos(); 
+            } else {
+                telaLogin.classList.remove('d-none');
+                painelCozinha.classList.add('d-none');
+                if (escutaPedidos) escutaPedidos(); 
+            }
+        });
+
+        document.getElementById('btn-entrar').addEventListener('click', async () => {
+            const email = document.getElementById('email-login').value;
+            const senha = document.getElementById('senha-login').value;
+            const btn = document.getElementById('btn-entrar');
+            
+            if(!email || !senha) return alert("Preencha e-mail e senha!");
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Entrando...';
+            
+            try {
+                await signInWithEmailAndPassword(auth, email, senha);
+            } catch (error) {
+                alert("Erro ao fazer login. Verifique e-mail e senha.");
+                btn.innerHTML = 'Acessar Painel';
+            }
+        });
+
+        document.getElementById('btn-sair').addEventListener('click', () => {
+            signOut(auth);
+        });
 
         window.concluirPedido = async function(idPedido) {
             if(confirm("Tem certeza que este pedido já foi entregue/finalizado?")) {
@@ -238,7 +239,7 @@
                     const referenciaPedido = doc(db, "pedidos", idPedido);
                     await updateDoc(referenciaPedido, { status: "concluido" });
                 } catch (error) {
-                    alert("Sua sessão expirou. Faça login novamente para concluir pedidos.");
+                    alert("Erro: Faça login novamente para concluir pedidos.");
                 }
             }
         }
