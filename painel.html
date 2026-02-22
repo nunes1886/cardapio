@@ -13,7 +13,6 @@
         .borda-mesa { border-left-color: #0d6efd; }
         .borda-delivery { border-left-color: #fd7e14; }
         
-        /* NOVA ANIMAÇÃO: Faz o card piscar em verde quando é novo */
         @keyframes piscarNovo {
             0% { box-shadow: 0 0 15px rgba(40, 167, 69, 0.8); background-color: #d4edda; }
             50% { box-shadow: 0 0 5px rgba(40, 167, 69, 0.2); background-color: #fff; }
@@ -26,23 +25,48 @@
     
     <audio id="som-campainha" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
 
-    <nav class="navbar navbar-dark bg-dark sticky-top shadow-sm">
-        <div class="container-fluid">
-            <a class="navbar-brand fw-bold" href="#">
-                <i class="bi bi-display"></i> Painel de Controle - Pedidos
-            </a>
-            <span class="text-white d-flex align-items-center">
-                <span class="spinner-grow spinner-grow-sm text-success me-2" role="status" aria-hidden="true"></span>
-                Ao vivo
-            </span>
+    <div id="tela-login" class="container mt-5" style="max-width: 400px;">
+        <div class="card shadow-lg border-0 rounded-4 mt-5">
+            <div class="card-header bg-dark text-white text-center py-4 border-0 rounded-top-4">
+                <h4 class="mb-0 fw-bold"><i class="bi bi-lock-fill"></i> Acesso à Cozinha</h4>
+                <small>Área restrita de pedidos</small>
+            </div>
+            <div class="card-body p-4">
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-muted">E-mail</label>
+                    <input type="email" id="email-login" class="form-control form-control-lg bg-light" placeholder="cozinha@restaurante.com">
+                </div>
+                <div class="mb-4">
+                    <label class="form-label fw-bold text-muted">Senha</label>
+                    <input type="password" id="senha-login" class="form-control form-control-lg bg-light" placeholder="******">
+                </div>
+                <button id="btn-entrar" class="btn btn-dark btn-lg w-100 fw-bold shadow-sm">Acessar Painel</button>
+            </div>
         </div>
-    </nav>
+    </div>
 
-    <div class="container-fluid mt-4 px-4">
-        <div class="row" id="area-pedidos">
-            <div class="col-12 text-center text-muted mt-5">
-                <div class="spinner-border text-secondary mb-2" role="status"></div>
-                <p>Aguardando conexão com o banco de dados...</p>
+    <div id="painel-cozinha" class="d-none">
+        <nav class="navbar navbar-dark bg-dark sticky-top shadow-sm">
+            <div class="container-fluid">
+                <a class="navbar-brand fw-bold" href="#">
+                    <i class="bi bi-display"></i> Painel de Controle - Pedidos
+                </a>
+                <div class="d-flex align-items-center">
+                    <span class="text-white d-flex align-items-center me-4">
+                        <span class="spinner-grow spinner-grow-sm text-success me-2" role="status" aria-hidden="true"></span>
+                        Ao vivo
+                    </span>
+                    <button id="btn-sair" class="btn btn-outline-light btn-sm fw-bold"><i class="bi bi-box-arrow-right"></i> Sair</button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container-fluid mt-4 px-4">
+            <div class="row" id="area-pedidos">
+                <div class="col-12 text-center text-muted mt-5">
+                    <div class="spinner-border text-secondary mb-2" role="status"></div>
+                    <p>Aguardando conexão com o banco de dados...</p>
+                </div>
             </div>
         </div>
     </div>
@@ -50,8 +74,9 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
         import { getFirestore, collection, onSnapshot, query, orderBy, doc, updateDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+        // Importando o módulo de Autenticação
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
-        // Suas chaves do Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyChutWVtye9dU_J1WH_9F8DooaDfadJZ3o",
             authDomain: "cardapio-digital-app-4ca1f.firebaseapp.com",
@@ -63,15 +88,55 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const auth = getAuth(app); // Iniciando a Autenticação
+
+        // ==========================================
+        // 0. LÓGICA DE LOGIN
+        // ==========================================
+        const telaLogin = document.getElementById('tela-login');
+        const painelCozinha = document.getElementById('painel-cozinha');
+
+        // Fica de olho se o usuário logou ou saiu
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                telaLogin.classList.add('d-none');
+                painelCozinha.classList.remove('d-none');
+            } else {
+                telaLogin.classList.remove('d-none');
+                painelCozinha.classList.add('d-none');
+            }
+        });
+
+        document.getElementById('btn-entrar').addEventListener('click', async () => {
+            const email = document.getElementById('email-login').value;
+            const senha = document.getElementById('senha-login').value;
+            const btn = document.getElementById('btn-entrar');
+            
+            if(!email || !senha) return alert("Preencha e-mail e senha!");
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Entrando...';
+            
+            try {
+                await signInWithEmailAndPassword(auth, email, senha);
+            } catch (error) {
+                alert("Erro ao fazer login. Verifique e-mail e senha.");
+                btn.innerHTML = 'Acessar Painel';
+            }
+        });
+
+        document.getElementById('btn-sair').addEventListener('click', () => {
+            signOut(auth);
+        });
+
+        // ==========================================
+        // 1. LÓGICA DE PEDIDOS EM TEMPO REAL
+        // ==========================================
         const consultaPedidos = query(collection(db, "pedidos"), orderBy("data_hora", "desc"));
         const containerPedidos = document.getElementById('area-pedidos');
 
-        // VARIÁVEIS PARA CONTROLAR O SOM E A ANIMAÇÃO
         let primeiraCarga = true; 
         let idsConhecidos = new Set(); 
         const somCampainha = document.getElementById('som-campainha');
 
-        // Escutando o banco de dados em tempo real
         onSnapshot(consultaPedidos, (snapshot) => {
             let html = "";
             
@@ -80,27 +145,23 @@
                 return;
             }
 
-            snapshot.forEach((doc) => {
-                const pedido = doc.data();
-                const idPedido = doc.id; 
+            snapshot.forEach((docSnap) => {
+                const pedido = docSnap.data();
+                const idPedido = docSnap.id; 
 
-                // Pula os pedidos que já foram concluídos
                 if (pedido.status === "concluido") return;
 
-                // LÓGICA DO ALARME: Verifica se é um pedido novo
                 let classeNovoPedido = "";
                 if (!primeiraCarga && !idsConhecidos.has(idPedido)) {
                     somCampainha.play().catch(e => console.log("Áudio bloqueado pelo navegador."));
-                    classeNovoPedido = "animacao-novo"; // Adiciona a classe que faz piscar
+                    classeNovoPedido = "animacao-novo"; 
                 }
-                idsConhecidos.add(idPedido); // Salva para não apitar duas vezes
+                idsConhecidos.add(idPedido); 
 
-                // Define as cores e ícones (Mesa ou Delivery)
                 const isDelivery = pedido.tipo_pedido === 'delivery';
                 const corBorda = isDelivery ? 'borda-delivery' : 'borda-mesa';
                 const iconeTipo = isDelivery ? '<i class="bi bi-motorcycle text-warning"></i> Delivery' : '<i class="bi bi-shop text-primary"></i> Mesa ' + pedido.mesa;
                 
-                // Monta os itens do pedido
                 let listaItens = "";
                 if(pedido.itens && pedido.itens.length > 0){
                     pedido.itens.forEach(item => {
@@ -108,7 +169,6 @@
                     });
                 }
 
-                // Monta o quadro amarelo de endereço (se for delivery)
                 let infoDeliveryHTML = "";
                 if (isDelivery && pedido.dados_entrega) {
                     infoDeliveryHTML = `
@@ -120,7 +180,6 @@
                     `;
                 }
 
-                // Cria o visual do Card. AQUI entram as variáveis de borda e animação juntas!
                 html += `
                 <div class="col-12 col-md-6 col-lg-4 mb-4">
                     <div class="card shadow-sm h-100 card-pedido ${corBorda} ${classeNovoPedido}">
@@ -154,18 +213,17 @@
                 `;
             });
 
-            // Se todos os pedidos estão concluídos
             if (html === "") {
                 containerPedidos.innerHTML = "<div class='col-12 text-center text-muted mt-5'><h5>Todos os pedidos foram concluídos! Nenhuma pendência.</h5></div>";
             } else {
                 containerPedidos.innerHTML = html;
             }
             
-            // Avisa o sistema que a primeira leitura do banco já foi feita
             primeiraCarga = false;
             
         }, (error) => {
-            console.error("Erro ao escutar pedidos: ", error);
+            // Se o firebase der erro silencioso de permissão, o painel do usuário só fica limpo
+            console.error("Erro ou acesso negado aos pedidos.", error);
         });
 
         // Função do botão concluir
@@ -175,7 +233,7 @@
                     const referenciaPedido = doc(db, "pedidos", idPedido);
                     await updateDoc(referenciaPedido, { status: "concluido" });
                 } catch (error) {
-                    alert("Erro ao atualizar o pedido. Tente novamente.");
+                    alert("Sua sessão expirou. Faça login novamente para concluir pedidos.");
                 }
             }
         }
