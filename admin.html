@@ -6,38 +6,69 @@
     <title>Painel do Chef - Gerenciar Cardápio</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #f4f6f9; }
+    </style>
 </head>
-<body class="bg-light pb-5">
+<body class="pb-5">
 
-    <div class="container mt-5" style="max-width: 800px;">
+    <div id="tela-login" class="container mt-5" style="max-width: 400px;">
+        <div class="card shadow-lg border-0 rounded-4 mt-5">
+            <div class="card-header bg-danger text-white text-center py-4 border-0 rounded-top-4">
+                <h4 class="mb-0 fw-bold"><i class="bi bi-lock-fill"></i> Acesso Restrito</h4>
+                <small>Área exclusiva do Chef</small>
+            </div>
+            <div class="card-body p-4">
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-muted">E-mail</label>
+                    <input type="email" id="email-login" class="form-control form-control-lg bg-light" placeholder="chef@restaurante.com">
+                </div>
+                <div class="mb-4">
+                    <label class="form-label fw-bold text-muted">Senha</label>
+                    <input type="password" id="senha-login" class="form-control form-control-lg bg-light" placeholder="******">
+                </div>
+                <button id="btn-entrar" class="btn btn-danger btn-lg w-100 fw-bold shadow-sm">Entrar no Sistema</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="painel-admin" class="container mt-4 d-none" style="max-width: 800px;">
         
-        <div class="card shadow mb-4 border-primary">
+        <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded shadow-sm border-start border-5 border-danger">
+            <h4 class="mb-0 fw-bold"><i class="bi bi-ui-checks-grid text-danger"></i> Gestão do Cardápio</h4>
+            <button id="btn-sair" class="btn btn-outline-secondary fw-bold btn-sm"><i class="bi bi-box-arrow-right"></i> Sair</button>
+        </div>
+
+        <div class="card shadow-sm mb-4 border-0">
             <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="bi bi-gear-fill"></i> Configurações Gerais</h5>
             </div>
             <div class="card-body">
                 <label class="form-label fw-bold">Nome do Restaurante</label>
                 <div class="input-group">
-                    <input type="text" id="nome-restaurante" class="form-control" placeholder="Ex: Pizzaria Nostra">
+                    <input type="text" id="nome-restaurante" class="form-control bg-light" placeholder="Ex: Pizzaria Nostra">
                     <button class="btn btn-outline-primary fw-bold" id="btn-salvar-nome">
                         <i class="bi bi-save"></i> Salvar Nome
                     </button>
                 </div>
-                <small class="text-muted">Este nome aparecerá no topo do aplicativo do cliente.</small>
-
-                <hr class="my-3">
-                <label class="form-label fw-bold">Adicionar Nova Categoria</label>
-                <div class="input-group">
-                    <input type="text" id="nova-categoria" class="form-control" placeholder="Ex: Pizzas, Porções, Vegano...">
-                    <button class="btn btn-outline-success fw-bold" id="btn-salvar-categoria">
-                        <i class="bi bi-plus-circle"></i> Adicionar Categoria
+                
+                <hr class="my-4">
+                
+                <label class="form-label fw-bold">Gerenciar Categorias</label>
+                <div class="input-group mb-3">
+                    <input type="text" id="nova-categoria" class="form-control bg-light" placeholder="Ex: Pizzas, Porções, Vegano...">
+                    <button class="btn btn-success fw-bold" id="btn-salvar-categoria">
+                        <i class="bi bi-plus-circle"></i> Adicionar
                     </button>
                 </div>
-                <small class="text-muted">As categorias criadas aparecerão nas opções do cardápio.</small>
+                
+                <ul class="list-group" id="lista-categorias">
+                    <li class="list-group-item text-muted text-center">Carregando categorias...</li>
+                </ul>
             </div>
         </div>
 
-        <div class="card shadow mb-5">
+        <div class="card shadow-sm mb-5 border-0">
             <div class="card-header bg-danger text-white">
                 <h5 class="mb-0" id="titulo-form">👨‍🍳 Cadastrar Novo Prato</h5>
             </div>
@@ -47,25 +78,25 @@
 
                     <div class="mb-3">
                         <label class="form-label fw-bold">Nome do Prato/Item</label>
-                        <input type="text" id="nome" class="form-control" required placeholder="Ex: Lasanha Bolonhesa">
+                        <input type="text" id="nome" class="form-control bg-light" required>
                     </div>
                     
                     <div class="mb-3">
                         <label class="form-label fw-bold">Categoria</label>
-                        <select id="categoria" class="form-select">
-                            <option value="">Carregando categorias...</option>
+                        <select id="categoria" class="form-select bg-light">
+                            <option value="">Carregando...</option>
                         </select>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Descrição (Ingredientes)</label>
-                        <textarea id="descricao" class="form-control" rows="2" placeholder="Ex: Massa fresca, molho ao sugo, carne moída..."></textarea>
+                        <label class="form-label fw-bold">Descrição</label>
+                        <textarea id="descricao" class="form-control bg-light" rows="2"></textarea>
                     </div>
 
                     <div class="row mb-3">
                         <div class="col-6">
                             <label class="form-label fw-bold">Preço (R$)</label>
-                            <input type="number" id="preco" class="form-control" step="0.01" required placeholder="Ex: 45.90">
+                            <input type="number" id="preco" class="form-control bg-light" step="0.01" required>
                         </div>
                         <div class="col-6 d-flex align-items-end">
                             <div class="form-check form-switch fs-5">
@@ -76,12 +107,12 @@
                     </div>
 
                     <div class="mb-4">
-                        <label class="form-label fw-bold">URL da Imagem (Link)</label>
-                        <input type="url" id="imagem_url" class="form-control" placeholder="Cole o link da foto aqui">
+                        <label class="form-label fw-bold">URL da Imagem</label>
+                        <input type="url" id="imagem_url" class="form-control bg-light" placeholder="Link da foto">
                     </div>
 
                     <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-success w-100 fw-bold fs-5" id="btn-submit">Adicionar ao Cardápio</button>
+                        <button type="submit" class="btn btn-success w-100 fw-bold fs-5" id="btn-submit">Salvar Prato</button>
                         <button type="button" class="btn btn-secondary d-none fw-bold" id="btn-cancelar" onclick="cancelarEdicao()">Cancelar</button>
                     </div>
                 </form>
@@ -89,9 +120,9 @@
         </div>
 
         <h4 class="fw-bold mb-3">📋 Pratos Cadastrados</h4>
-        <div class="card shadow">
+        <div class="card shadow-sm border-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
+                <table class="table table-hover align-middle mb-0 bg-white">
                     <thead class="table-dark">
                         <tr>
                             <th>Item</th>
@@ -102,7 +133,7 @@
                         </tr>
                     </thead>
                     <tbody id="lista-pratos">
-                        <tr><td colspan="5" class="text-center text-muted">Carregando cardápio...</td></tr>
+                        <tr><td colspan="5" class="text-center text-muted py-4">Carregando cardápio...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -112,8 +143,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-        // NOVO: Adicionado arrayUnion na importação
-        import { getFirestore, collection, addDoc, onSnapshot, doc, setDoc, getDoc, updateDoc, deleteDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, setDoc, updateDoc, deleteDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyChutWVtye9dU_J1WH_9F8DooaDfadJZ3o",
@@ -126,36 +157,85 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const auth = getAuth(app); 
 
         // ==========================================
-        // 1. CONFIGURAÇÕES DO RESTAURANTE (NOME E CATEGORIAS)
+        // 0. LÓGICA DE LOGIN 
+        // ==========================================
+        const telaLogin = document.getElementById('tela-login');
+        const painelAdmin = document.getElementById('painel-admin');
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                telaLogin.classList.add('d-none');
+                painelAdmin.classList.remove('d-none');
+            } else {
+                telaLogin.classList.remove('d-none');
+                painelAdmin.classList.add('d-none');
+            }
+        });
+
+        document.getElementById('btn-entrar').addEventListener('click', async () => {
+            const email = document.getElementById('email-login').value;
+            const senha = document.getElementById('senha-login').value;
+            const btn = document.getElementById('btn-entrar');
+            
+            if(!email || !senha) return alert("Preencha e-mail e senha!");
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Entrando...';
+            
+            try {
+                await signInWithEmailAndPassword(auth, email, senha);
+            } catch (error) {
+                alert("Erro ao fazer login. Verifique e-mail e senha.");
+                btn.innerHTML = 'Entrar no Sistema';
+            }
+        });
+
+        document.getElementById('btn-sair').addEventListener('click', () => {
+            signOut(auth);
+        });
+
+        // ==========================================
+        // 1. CONFIGURAÇÕES (NOME E CATEGORIAS)
         // ==========================================
         const refConfig = doc(db, "configuracoes", "info_restaurante");
+        let categoriasGlobais = []; // Guarda as categorias para podermos editar/excluir
 
-        // Escuta as configurações em tempo real
         onSnapshot(refConfig, (snapshot) => {
             if (snapshot.exists()) {
                 const dados = snapshot.data();
+                if (dados.nome) document.getElementById('nome-restaurante').value = dados.nome;
                 
-                if (dados.nome) {
-                    document.getElementById('nome-restaurante').value = dados.nome;
-                }
-                
-                // Preenche as opções de Categoria no formulário de pratos
                 if (dados.categorias && dados.categorias.length > 0) {
-                    const selectCategoria = document.getElementById('categoria');
-                    selectCategoria.innerHTML = ""; // Limpa as opções de "carregando..."
+                    categoriasGlobais = dados.categorias;
                     
-                    dados.categorias.forEach(cat => {
+                    // 1. Atualiza o <select> do formulário de pratos
+                    const selectCategoria = document.getElementById('categoria');
+                    selectCategoria.innerHTML = ""; 
+                    categoriasGlobais.forEach(cat => {
                         selectCategoria.innerHTML += `<option value="${cat}">${cat}</option>`;
                     });
+
+                    // 2. Atualiza a lista visual com os botões Editar/Excluir
+                    const listaCat = document.getElementById('lista-categorias');
+                    listaCat.innerHTML = "";
+                    categoriasGlobais.forEach((cat, index) => {
+                        listaCat.innerHTML += `
+                            <li class="list-group-item d-flex justify-content-between align-items-center bg-light">
+                                <span class="fw-bold text-secondary">${cat}</span>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="editarCategoria(${index}, '${cat}')" title="Editar Nome"><i class="bi bi-pencil-square"></i></button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="excluirCategoria('${cat}')" title="Excluir Categoria"><i class="bi bi-trash"></i></button>
+                                </div>
+                            </li>
+                        `;
+                    });
+
+                } else {
+                    categoriasGlobais = [];
+                    document.getElementById('lista-categorias').innerHTML = '<li class="list-group-item text-muted text-center">Nenhuma categoria cadastrada.</li>';
+                    document.getElementById('categoria').innerHTML = '<option value="">Sem categorias</option>';
                 }
-            } else {
-                // Se não existir o documento de configurações ainda, cria um com valores padrão
-                setDoc(refConfig, { 
-                    nome: "Meu Restaurante", 
-                    categorias: ["Sugestão do Chef", "Prato Principal", "Lanches", "Sobremesas", "Bebidas"] 
-                });
             }
         });
 
@@ -166,22 +246,51 @@
                 await setDoc(refConfig, { nome: novoNome }, { merge: true });
                 alert("Nome salvo com sucesso!");
             } catch (error) {
-                alert("Erro ao salvar o nome.");
+                alert("Erro de segurança: Você precisa estar logado para salvar.");
             }
         });
 
-        // Lógica para Salvar Nova Categoria
         document.getElementById('btn-salvar-categoria').addEventListener('click', async () => {
             const novaCat = document.getElementById('nova-categoria').value.trim();
             if (novaCat === "") return alert("Digite o nome da categoria!");
             try {
                 await updateDoc(refConfig, { categorias: arrayUnion(novaCat) });
-                document.getElementById('nova-categoria').value = ""; // Limpa o campo
-                alert("Categoria adicionada com sucesso!");
+                document.getElementById('nova-categoria').value = "";
             } catch (error) {
-                alert("Erro ao adicionar categoria.");
+                alert("Erro de segurança: Acesso negado.");
             }
         });
+
+        // Funções para Editar e Excluir Categoria
+        window.editarCategoria = async function(index, nomeAntigo) {
+            // Abre uma janelinha nativa do navegador pedindo o novo nome
+            const novoNome = prompt("Editar nome da categoria:", nomeAntigo);
+            
+            // Se o usuário digitou algo válido e diferente do antigo
+            if (novoNome !== null && novoNome.trim() !== "" && novoNome !== nomeAntigo) {
+                let novoArray = [...categoriasGlobais]; // Copia a lista atual
+                novoArray[index] = novoNome.trim(); // Substitui o nome na posição certa
+                
+                try {
+                    await updateDoc(refConfig, { categorias: novoArray });
+                } catch(e) {
+                    alert("Erro ao editar categoria. Acesso negado.");
+                }
+            }
+        }
+
+        window.excluirCategoria = async function(nomeParaExcluir) {
+            if(confirm(`Tem certeza que deseja excluir a categoria "${nomeParaExcluir}"?\n\nOs pratos que usam ela ficarão na aba "Outros" para o cliente.`)) {
+                // Cria uma nova lista removendo a categoria escolhida
+                let novoArray = categoriasGlobais.filter(cat => cat !== nomeParaExcluir);
+                
+                try {
+                    await updateDoc(refConfig, { categorias: novoArray });
+                } catch(e) {
+                    alert("Erro ao excluir categoria.");
+                }
+            }
+        }
 
         // ==========================================
         // 2. LISTAGEM DO CARDÁPIO (TEMPO REAL)
@@ -228,7 +337,7 @@
         });
 
         // ==========================================
-        // 3. SALVAR (CRIAR NOVO OU ATUALIZAR)
+        // 3. SALVAR (CRIAR NOVO OU ATUALIZAR PRATOS)
         // ==========================================
         document.getElementById("form-prato").addEventListener("submit", async function(event) {
             event.preventDefault(); 
@@ -236,7 +345,7 @@
             const idEdicao = document.getElementById('id-prato-edicao').value;
             const prato = {
                 nome: document.getElementById('nome').value,
-                categoria: document.getElementById('categoria').value, // Vai pegar a categoria que o JS preencheu
+                categoria: document.getElementById('categoria').value,
                 descricao: document.getElementById('descricao').value,
                 preco: parseFloat(document.getElementById('preco').value),
                 disponivel: document.getElementById('disponivel').checked,
@@ -255,16 +364,20 @@
                 }
             } catch (error) {
                 console.error("Erro ao salvar: ", error);
-                alert("Erro ao salvar prato.");
+                alert("Acesso Negado: Sua sessão expirou ou você não tem permissão.");
             }
         });
 
         // ==========================================
-        // 4. FUNÇÕES GLOBAIS DE APOIO (EDITAR E EXCLUIR)
+        // 4. FUNÇÕES GLOBAIS (PRATOS)
         // ==========================================
         window.excluirPrato = async function(id) {
-            if(confirm("Tem certeza que deseja excluir este prato definitivamente?")) {
-                await deleteDoc(doc(db, "cardapio", id));
+            if(confirm("Tem certeza que deseja excluir este prato?")) {
+                try {
+                    await deleteDoc(doc(db, "cardapio", id));
+                } catch(e) {
+                    alert("Erro: Acesso Negado.");
+                }
             }
         }
 
@@ -283,7 +396,6 @@
             document.getElementById('btn-submit').innerText = 'Atualizar Prato';
             document.getElementById('btn-submit').classList.replace('btn-success', 'btn-warning');
             document.getElementById('btn-cancelar').classList.remove('d-none');
-            
             window.scrollTo(0, 0); 
         }
 
@@ -291,7 +403,7 @@
             document.getElementById("form-prato").reset();
             document.getElementById('id-prato-edicao').value = "";
             document.getElementById('titulo-form').innerHTML = '👨‍🍳 Cadastrar Novo Prato';
-            document.getElementById('btn-submit').innerText = 'Adicionar ao Cardápio';
+            document.getElementById('btn-submit').innerText = 'Salvar Prato';
             document.getElementById('btn-submit').classList.replace('btn-warning', 'btn-success');
             document.getElementById('btn-cancelar').classList.add('d-none');
         }
