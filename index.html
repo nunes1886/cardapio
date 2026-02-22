@@ -99,6 +99,7 @@
             
         </div>
     </div>
+    
     <div class="modal fade" id="modalPix" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg">
@@ -231,7 +232,6 @@
 
         function salvarObservacao(index, texto) {
             carrinho[index].observacao = texto;
-            console.log("Carrinho atualizado com observação:", carrinho);
         }
 
         function pagarNaMesaPix() {
@@ -280,7 +280,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-        // NOVO: Adicionado doc e getDoc na importação
+        // Importações necessárias, incluindo doc e getDoc para puxar as configurações
         import { getFirestore, collection, getDocs, addDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -295,7 +295,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app); 
 
-        // NOVA FUNÇÃO UNIFICADA: Puxa Nome, Categorias e depois os Pratos
+        // FUNÇÃO UNIFICADA: Puxa Nome, Categorias e depois os Pratos
         async function carregarDadosIniciais() {
             const container = document.getElementById('lista-produtos');
             
@@ -307,11 +307,15 @@
                 
                 if (configSnap.exists()) {
                     const dadosConfig = configSnap.data();
+                    
+                    // Altera o nome no topo
                     if (dadosConfig.nome) {
                         document.getElementById('nome-restaurante-topo').innerHTML = `<i class="bi bi-shop"></i> ${dadosConfig.nome}`;
                     }
+                    
+                    // Pega a ordem de categorias cadastradas no admin
                     if (dadosConfig.categorias && dadosConfig.categorias.length > 0) {
-                        ordemCategorias = dadosConfig.categorias; // Pega a ordem customizada do Admin
+                        ordemCategorias = dadosConfig.categorias;
                     }
                 } else {
                     document.getElementById('nome-restaurante-topo').innerHTML = `<i class="bi bi-shop"></i> Cardápio Digital`;
@@ -336,23 +340,23 @@
                     itensAgrupados[cat].push(prato);
                 });
 
-                // Adiciona a categoria 'Outros' no fim da lista se existir algum prato sem categoria oficial
+                // Adiciona a categoria 'Outros' no fim da lista, caso tenha pratos sem categoria oficial
                 if (!ordemCategorias.includes("Outros")) ordemCategorias.push("Outros");
 
                 let htmlFinal = "";
 
-                // 4. Monta o HTML seguindo a ordem de categorias
+                // 4. Monta o HTML separando por categoria
                 ordemCategorias.forEach(categoria => {
                     if (itensAgrupados[categoria] && itensAgrupados[categoria].length > 0) {
                         
-                        // Desenha o Título da Categoria
+                        // Desenha o Título da Categoria em destaque
                         htmlFinal += `
                             <div class="col-12 mt-4 mb-3">
                                 <h4 class="fw-bold border-bottom pb-2 text-danger">${categoria}</h4>
                             </div>
                         `;
 
-                        // Desenha os pratos daquela categoria
+                        // Desenha os pratos daquela categoria específica
                         itensAgrupados[categoria].forEach((prato) => {
                             htmlFinal += `
                             <div class="col-12 col-md-6 mb-3">
@@ -383,7 +387,7 @@
                     }
                 });
 
-                // Joga tudo na tela
+                // Joga o HTML final agrupado na tela
                 if(htmlFinal === "") {
                     container.innerHTML = "<div class='col-12 text-center text-muted py-4'>Nenhum prato disponível no momento.</div>";
                 } else {
@@ -399,7 +403,7 @@
         // Roda a função assim que o site carrega
         carregarDadosIniciais();
 
-        // Função de envio do pedido
+        // Envia o pedido para o banco de dados
         window.enviarPedido = async function(metodoPagamento) {
             if (carrinho.length === 0) {
                 alert("Seu carrinho está vazio!");
